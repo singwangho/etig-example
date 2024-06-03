@@ -1,0 +1,67 @@
+services:
+  emqx:
+    user: 0:0
+    image: emqx
+    ports:
+      - 18083:18083
+      - 1883:1883
+    volumes:
+      - ./data/emqx/data:/opt/emqx/data
+      - ./data/emqx/log:/opt/emqx/log
+    environment:
+      - EMQX_DASHBOARD_DEFAULT_USER_LOGIN=admin
+      - EMQX_DASHBOARD_DEFAULT_USER_PASSWORD=xxxxxxx
+  influxdb:
+    image: influxdb
+    ports:
+      - 8086:8086
+    volumes:
+      - ./data/influxdb/db:/var/lib/influxdb2
+      - ./data/influxdb/config:/etc/influxdb2
+    hostname: influxdb
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=influx_admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=xxxxxx
+      # Generate an admin token here in Ubuntu `openssl rand -hex 32`
+      #- DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=6zoPWrsO1p4dEKehYVfsJ7HZ-efFcc1KRjl3Fdwsm0p1uCVxfjR47XD8SuA7eW1DBtHUREUqLjRyl2D3LUTZcA== # Match with telegraf config file
+      - DOCKER_INFLUXDB_INIT_ORG=myOrg # Must match with telegraf config file
+      - DOCKER_INFLUXDB_INIT_BUCKET=telegraf_iiot
+      # Primary InfluxDB bucket retention period
+      # NOTE: Valid units are nanoseconds (ns), microseconds(us), milliseconds (ms)
+      # seconds (s), minutes (m), hours (h), days (d), and weeks (w).
+      - DOCKER_INFLUXDB_INIT_RETENTION=4d
+      - DOCKER_INFLUXDB_INIT_PORT=8086
+      - DOCKER_INFLUXDB_INIT_HOST=influxdb
+
+  telegraf:
+    image: telegraf
+    volumes:
+      - ./config/telegraf/telegraf.conf:/etc/telegraf/telegraf.conf
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 10
+    depends_on:
+      - influxdb
+      - emqx
+
+  grafana:
+    user: 0:0
+    image: grafana/grafana-oss
+    ports:
+      - 3000:3000
+    volumes:
+      - ./data/grafana/data:/var/lib/grafana
+    depends_on:
+      - influxdb
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_NAME=Main Org. # Need to be same name as main org!
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+      #- GF_AUTH_ANONYMOUS_DEVICE_LIMIT=1000
+      - GF_AUTH_ANONYMOUS_HIDE_VERSION=true
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+      #- GF_DASHBOARDS_MIN_REFRESH_INTERVAL=200ms
+
