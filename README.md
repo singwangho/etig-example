@@ -18,6 +18,6 @@ I ran this with Ubuntu, but as it runs on docker, it should run on any environme
 4. Now start configuring and troubleshooting.  I suggest to start at telegraf (docker logs -f [telegraf container name]).
 5. Then goto influxdb make sure your bucket is collecting data (see Huntabyte's youtube video...)
 6. Then to Grafana, you need to configure the connection with influxdb (again see HuntaByte's video)
-7. Then finally back to MQTT using the attached python mqtt-consumer & publisher.
+7. Then finally visit EMQX, you should see telegraf connected to EMQX.  I have attached a python based mqtt-consumer & publisher to help you do MQTT debugging.
 
 Good luck.
